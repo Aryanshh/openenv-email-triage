@@ -1,0 +1,70 @@
+name: "openenv-email-triage"
+version: "1.0.0"
+description: "A real-world RL environment where an AI agent triages a synthetic corporate inbox by categorizing, prioritizing, drafting replies, and escalating emails."
+author: "openenv-email-triage"
+tags:
+  - "openenv"
+  - "email"
+  - "triage"
+  - "nlp"
+  - "reinforcement-learning"
+
+observation_space:
+  current_email:
+    id: string
+    subject: string
+    sender: string
+    body: string
+    timestamp: string  # ISO 8601
+    labels: list[string]
+  inbox_summary:
+    total: integer
+    processed: integer
+    remaining: integer
+  step: integer
+
+action_space:
+  action_type:
+    type: enum
+    values:
+      - categorize
+      - prioritize
+      - reply
+      - archive
+      - escalate
+      - skip
+  target_email_id: string
+  category:
+    type: string
+    optional: true
+    description: "Required for categorize action"
+  priority:
+    type: integer
+    optional: true
+    range: [1, 5]
+    description: "Required for prioritize action"
+  reply_body:
+    type: string
+    optional: true
+    description: "Required for reply action"
+  escalation_reason:
+    type: string
+    optional: true
+    description: "Required for escalate action"
+
+reward_range: [0.0, 1.0]
+max_steps: 60
+
+tasks:
+  - name: easy
+    description: "Categorize 10 emails into business/support/spam/urgent"
+    email_count: 10
+    max_steps: 20
+  - name: medium
+    description: "Categorize and prioritize 20 emails"
+    email_count: 20
+    max_steps: 40
+  - name: hard
+    description: "Categorize, prioritize, and draft replies/escalations for 30 emails"
+    email_count: 30
+    max_steps: 60

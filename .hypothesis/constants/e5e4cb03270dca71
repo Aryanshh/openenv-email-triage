@@ -1,0 +1,4 @@
+# file: C:\Users\aryan\Desktop\Meta_Scaler\email_triage\env.py
+# hypothesis_version: 6.151.11
+
+[0.0, 'actions_taken', 'categorize', 'category', 'current_index', 'data', 'easy', 'emails.json', 'episode_actions', 'error', 'escalate', 'escalation_reason', 'final_score', 'ground_truth', 'inbox', 'inbox_size', 'invalid action', 'max_steps', 'prioritize', 'priority', 'r', 'reply', 'reply_body', 'seed', 'step_count', 'task_name', 'unknown email id', 'utf-8']

@@ -1,0 +1,8 @@
+fastapi
+uvicorn[standard]
+pydantic>=2.0
+openai
+hypothesis
+pytest
+pyyaml
+httpx
