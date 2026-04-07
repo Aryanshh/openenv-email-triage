@@ -191,4 +191,4 @@ docker run -p 7860:7860 openenv-email-triage
 
 ## HF Space
 
-Live demo: [https://huggingface.co/spaces/your-username/openenv-email-triage](https://huggingface.co/spaces/your-username/openenv-email-triage)
+Live demo: [https://huggingface.co/spaces/aryanshh/openenv-email-triage](https://huggingface.co/spaces/aryanshh/openenv-email-triage)
