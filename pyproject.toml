@@ -7,7 +7,7 @@ name = "openenv-email-triage"
 version = "1.0.0"
 description = "A real-world RL environment where an AI agent triages a synthetic corporate inbox."
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.11"
 dependencies = [
     "fastapi",
     "uvicorn[standard]",
@@ -16,8 +16,12 @@ dependencies = [
     "hypothesis",
     "pytest",
     "pyyaml",
-    "httpx"
+    "httpx",
+    "openenv-core>=0.2.0"
 ]
 
+[project.scripts]
+server = "server.app:start"
+
 [tool.setuptools.packages.find]
-include = ["email_triage*"]
+include = ["email_triage*", "server*"]
