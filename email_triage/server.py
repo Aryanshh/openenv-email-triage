@@ -13,6 +13,7 @@ from __future__ import annotations
 from typing import Optional
 
 from fastapi import FastAPI
+from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
 
 from email_triage.env import EmailTriageEnv
@@ -52,3 +53,9 @@ def state() -> dict:
 def health() -> dict:
     """Liveness check."""
     return {"status": "ok"}
+
+
+@app.get("/")
+def root():
+    """Redirect to the interactive API documentation."""
+    return RedirectResponse(url="/docs")

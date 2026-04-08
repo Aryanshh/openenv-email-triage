@@ -21,20 +21,22 @@ from email_triage.models import Action, ActionType
 # Environment variable configuration
 # ---------------------------------------------------------------------------
 
-OPENAI_API_KEY: str = os.environ.get("OPENAI_API_KEY", "")
-API_BASE_URL: Optional[str] = os.environ.get("API_BASE_URL") or None
-MODEL_NAME: str = os.environ.get("MODEL_NAME", "gpt-4o-mini")
-HF_TOKEN: Optional[str] = os.environ.get("HF_TOKEN") or None
+API_BASE_URL = os.getenv("API_BASE_URL", "https://api.openai.com/v1")
+MODEL_NAME = os.getenv("MODEL_NAME", "gpt-4o-mini")
+HF_TOKEN = os.getenv("HF_TOKEN")
 
-if not OPENAI_API_KEY:
-    print("ERROR: OPENAI_API_KEY environment variable is not set.", file=sys.stderr)
+# Optional - if you use from_docker_image():
+LOCAL_IMAGE_NAME = os.getenv("LOCAL_IMAGE_NAME")
+
+if not HF_TOKEN:
+    print("ERROR: HF_TOKEN environment variable is not set.", file=sys.stderr)
     sys.exit(1)
 
 # ---------------------------------------------------------------------------
 # OpenAI client
 # ---------------------------------------------------------------------------
 
-client = OpenAI(api_key=OPENAI_API_KEY, base_url=API_BASE_URL)
+client = OpenAI(api_key=HF_TOKEN, base_url=API_BASE_URL)
 
 # ---------------------------------------------------------------------------
 # Prompt builder
