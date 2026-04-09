@@ -26,7 +26,7 @@ class EasyGrader(BaseGrader):
                 email = gt_map.get(action.email_id)
                 if email and action.category == email.category:
                     total += 0.1
-        return min(1.0, max(0.0, total))
+        return min(0.99, max(0.01, total))
 
 
 class MediumGrader(BaseGrader):
@@ -44,7 +44,7 @@ class MediumGrader(BaseGrader):
             elif action.action_type == "prioritize" and action.priority is not None:
                 if abs(action.priority - email.priority) <= 1:
                     total += 0.025
-        return min(1.0, max(0.0, total))
+        return min(0.99, max(0.01, total))
 
 
 class HardGrader(BaseGrader):
@@ -69,7 +69,7 @@ class HardGrader(BaseGrader):
                     for kw in email.required_keywords
                 ):
                     total += 0.015
-        return min(1.0, max(0.0, total))
+        return min(0.99, max(0.01, total))
 
 
 @dataclass
