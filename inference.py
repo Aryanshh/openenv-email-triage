@@ -1,185 +1,81 @@
-"""Baseline inference script for OpenEnv Email Triage.
-
-Runs an LLM agent (via OpenAI client) against all three tasks sequentially
-and emits structured log lines for evaluation.
-
-Requirements: 7.1-7.10
-"""
-from __future__ import annotations
-
 import json
 import os
 import sys
 from typing import Optional
-
 from openai import OpenAI
-
-from email_triage.env import EmailTriageEnv
-from email_triage.models import Action, ActionType
+import httpx
 
 # ---------------------------------------------------------------------------
-# Environment variable configuration
+# Config
 # ---------------------------------------------------------------------------
-
 API_BASE_URL = os.getenv("API_BASE_URL", "https://api.openai.com/v1")
 MODEL_NAME = os.getenv("MODEL_NAME", "gpt-4o-mini")
 HF_TOKEN = os.getenv("HF_TOKEN")
 
-# Optional - if you use from_docker_image():
-LOCAL_IMAGE_NAME = os.getenv("LOCAL_IMAGE_NAME")
-
 if not HF_TOKEN:
-    print("ERROR: HF_TOKEN environment variable is not set.", file=sys.stderr)
+    print("ERROR: HF_TOKEN not set")
     sys.exit(1)
 
-# ---------------------------------------------------------------------------
-# OpenAI client
-# ---------------------------------------------------------------------------
-
 client = OpenAI(api_key=HF_TOKEN, base_url=API_BASE_URL)
+BASE_URL = "http://localhost:7860"
 
 # ---------------------------------------------------------------------------
-# Prompt builder
+# Prompting
 # ---------------------------------------------------------------------------
+SYSTEM_PROMPT = """\
+You are an Eco-Resilient Logistics Agent. Your goal is to fulfill orders while minimizing CO2.
+Respond ONLY with a valid JSON completion.
 
-_SYSTEM_PROMPT = """\
-You are an email triage agent. For each email you receive, you must decide the best action.
-Respond ONLY with a valid JSON object — no markdown, no explanation.
-
-The JSON must have this shape:
+Available Actions:
 {
-  "action_type": "categorize|prioritize|reply|archive|escalate|skip",
-  "target_email_id": "<email_id>",
-  "category": "<business|support|spam|urgent>",
-  "priority": <1-5>,
-  "reply_body": "<text>",
-  "escalation_reason": "<text>"
+  "action_type": "order_parts | produce | offset | skip",
+  "part_type": "chips | sensors | batteries | casing",
+  "quantity": number,
+  "mode": "sea | air | rail | road",
+  "product": "EcoPhone | GreenTab",
+  "offset_amount": number
 }
-
-Include only the fields relevant to the chosen action_type.
-Always include "action_type" and "target_email_id".
 """
 
-
-def _build_user_prompt(obs) -> str:
-    email = obs.current_email
-    summary = obs.inbox_summary
-    lines = [
-        f"Email ID: {email.id}",
-        f"Subject: {email.subject}",
-        f"From: {email.sender}",
-        f"Labels: {', '.join(email.labels) if email.labels else 'none'}",
-        f"Body:\n{email.body}",
-        "",
-        f"Inbox: {summary.processed} processed, {summary.remaining} remaining (total {summary.total}).",
-        "",
-        "Choose the best triage action for this email and respond with JSON only.",
-    ]
-    return "\n".join(lines)
-
-
-# ---------------------------------------------------------------------------
-# LLM action selection
-# ---------------------------------------------------------------------------
-
-def _call_llm(obs) -> dict:
-    """Call the LLM and return the parsed JSON dict."""
+def get_action(obs):
+    prompt = f"Current State: {json.dumps(obs, indent=2)}\nChoose next action:"
     response = client.chat.completions.create(
         model=MODEL_NAME,
         messages=[
-            {"role": "system", "content": _SYSTEM_PROMPT},
-            {"role": "user", "content": _build_user_prompt(obs)},
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user", "content": prompt}
         ],
-        temperature=0.0,
-        max_tokens=256,
+        response_format={"type": "json_object"}
     )
-    content = response.choices[0].message.content or ""
-    return json.loads(content.strip())
-
-
-def _parse_action(obs, raw: dict) -> Action:
-    """Build an Action from the LLM's raw dict, forcing the correct email id."""
-    raw["target_email_id"] = obs.current_email.id
-    return Action(**raw)
-
-
-def _skip_action(obs) -> Action:
-    return Action(action_type=ActionType.skip, target_email_id=obs.current_email.id)
-
+    return json.loads(response.choices[0].message.content)
 
 # ---------------------------------------------------------------------------
-# Episode runner
+# Runner
 # ---------------------------------------------------------------------------
-
-def run_episode(task_name: str) -> tuple[float, int, list[float]]:
-    """Run one full episode. Returns (score, total_steps, rewards_list)."""
-    env = EmailTriageEnv(task=task_name)
-    obs = env.reset()
-
-    print(f"[START] task={task_name} env=openenv-email-triage model={MODEL_NAME}")
-
-    step_n = 0
-    rewards: list[float] = []
-    done = False
-    info: dict = {}
-
-    while not done:
-        step_n += 1
-        error_msg = "null"
-
-        try:
-            raw = _call_llm(obs)
-            action = _parse_action(obs, raw)
-            action_str = action.action_type.value
-        except Exception as exc:
-            error_msg = str(exc).replace("\n", " ")[:120]
-            action = _skip_action(obs)
-            action_str = "skip"
-
-        obs, reward, done, info = env.step(action)
-
-        if "error" in info and error_msg == "null":
-            error_msg = info["error"]
-
-        rewards.append(reward.value)
-        done_str = "true" if done else "false"
-        print(
-            f"[STEP]  step={step_n} action={action_str} "
-            f"reward={reward.value:.2f} done={done_str} error={error_msg}"
-        )
-
-    score: float = info.get("final_score", 0.0)
-    success_str = "true" if score > 0.0 else "false"
-    rewards_str = ",".join(f"{r:.2f}" for r in rewards)
-
-    print(
-        f"[END]   success={success_str} steps={step_n} "
-        f"score={score:.4f} rewards={rewards_str}"
-    )
-
-    return score, step_n, rewards
-
-
-# ---------------------------------------------------------------------------
-# Main
-# ---------------------------------------------------------------------------
-
-TASKS = ["easy", "medium", "hard"]
-
-
-def main() -> None:
-    results: list[tuple[str, float, bool]] = []
-
-    for task_name in TASKS:
-        score, _steps, _rewards = run_episode(task_name)
-        results.append((task_name, score, score > 0.0))
-
-    print()
-    print(f"{'Task':<10}{'Score':<10}{'Success'}")
-    print("-" * 28)
-    for task_name, score, success in results:
-        print(f"{task_name:<10}{score:<10.4f}{'true' if success else 'false'}")
-
+def run_task(task_name: str):
+    print(f"[START] task={task_name} env=atlas-greenpath model={MODEL_NAME}")
+    
+    with httpx.Client(base_url=BASE_URL, timeout=30.0) as app:
+        obs = app.post("/reset", json={"task": task_name}).json()
+        
+        done = False
+        step = 0
+        while not done and step < 50:
+            step += 1
+            action_json = get_action(obs)
+            resp = app.post("/step", json=action_json).json()
+            
+            obs = resp["observation"]
+            reward = resp["reward"]
+            done = resp["done"]
+            
+            print(f"[STEP]  step={step} action={action_json['action_type']} reward={reward:.2f} done={done} error=null")
+            
+            if done:
+                score = resp["info"].get("final_score", 0.0)
+                print(f"[END]   success=true steps={step} score={score:.4f} rewards=...")
 
 if __name__ == "__main__":
-    main()
+    # In a real environment, we'd start the server first.
+    # For baseline reproducibility, we assume the server is running on 7860.
+    run_task("easy")

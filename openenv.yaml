@@ -1,70 +1,80 @@
-name: "openenv-email-triage"
+name: "atlas-greenpath"
 version: "1.0.0"
-description: "A real-world RL environment where an AI agent triages a synthetic corporate inbox by categorizing, prioritizing, drafting replies, and escalating emails."
-author: "openenv-email-triage"
+description: "An eco-resilient logistics RL environment where an agent balances time, cost, and carbon footprint during supply chain disruptions."
+author: "aryanshh"
 tags:
   - "openenv"
-  - "email"
-  - "triage"
-  - "nlp"
-  - "reinforcement-learning"
+  - "logistics"
+  - "esg"
+  - "supply-chain"
 
 observation_space:
-  current_email:
-    id: string
-    subject: string
-    sender: string
-    body: string
-    timestamp: string  # ISO 8601
-    labels: list[string]
-  inbox_summary:
-    total: integer
-    processed: integer
-    remaining: integer
   step: integer
+  inventory:
+    chips: integer
+    sensors: integer
+    batteries: integer
+    casing: integer
+  active_shipments:
+    type: list
+    schema:
+      id: string
+      part: string
+      quantity: integer
+      mode: string
+      eta: integer
+      carbon_impact: float
+      cost: float
+  pending_orders:
+    type: list
+    schema:
+      id: string
+      product: string
+      quantity: integer
+      due_date: integer
+      reward: float
+  carbon_total: float
+  carbon_quota: float
+  cash_balance: float
+  news: 
+    type: string
+    optional: true
 
 action_space:
   action_type:
     type: enum
     values:
-      - categorize
-      - prioritize
-      - reply
-      - archive
-      - escalate
+      - order_parts
+      - reroute
+      - produce
+      - offset
       - skip
-  target_email_id: string
-  category:
+  part_type:
     type: string
     optional: true
-    description: "Required for categorize action"
-  priority:
+  quantity:
     type: integer
     optional: true
-    range: [1, 5]
-    description: "Required for prioritize action"
-  reply_body:
+  mode:
     type: string
     optional: true
-    description: "Required for reply action"
-  escalation_reason:
+  shipment_id:
     type: string
     optional: true
-    description: "Required for escalate action"
+  product:
+    type: string
+    optional: true
+  offset_amount:
+    type: float
+    optional: true
 
-reward_range: [0.0, 1.0]
-max_steps: 60
+reward_range: [0.01, 0.99]
+max_steps: 50
 
 tasks:
   - name: easy
-    description: "Categorize 10 emails into business/support/spam/urgent"
-    email_count: 10
-    max_steps: 20
+    description: "Fulfill orders using the most carbon-efficient routes."
   - name: medium
-    description: "Categorize and prioritize 20 emails"
-    email_count: 20
-    max_steps: 40
+    description: "Navigate a port strike disruption by re-routing shipments."
   - name: hard
-    description: "Categorize, prioritize, and draft replies/escalations for 30 emails"
-    email_count: 30
-    max_steps: 60
+    description: "Maximize resiliency during a global crisis while staying under a strict carbon quota."

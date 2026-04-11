@@ -3,9 +3,9 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "openenv-email-triage"
+name = "atlas-greenpath"
 version = "1.0.0"
-description = "A real-world RL environment where an AI agent triages a synthetic corporate inbox."
+description = "Eco-resilient logistics environment for OpenEnv hackathon."
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
@@ -13,15 +13,12 @@ dependencies = [
     "uvicorn[standard]",
     "pydantic>=2.0",
     "openai",
-    "hypothesis",
-    "pytest",
     "pyyaml",
-    "httpx",
-    "openenv-core>=0.2.0"
+    "httpx"
 ]
 
 [project.scripts]
 server = "server.app:main"
 
 [tool.setuptools.packages.find]
-include = ["email_triage*", "server*"]
+include = ["atlas_eco*", "server*"]
